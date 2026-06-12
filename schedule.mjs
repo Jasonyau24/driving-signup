@@ -39,35 +39,36 @@ function addDays(dateValue, days) {
   return date.toISOString().slice(0, 10);
 }
 
+function todayDate() {
+  const parts = localDateParts();
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 function activeSignupDate() {
   const parts = localDateParts();
   const today = `${parts.year}-${parts.month}-${parts.day}`;
   return Number(parts.hour) >= rolloverHour ? addDays(today, 1) : today;
 }
 
-function todayDate() {
-  const parts = localDateParts();
-  return `${parts.year}-${parts.month}-${parts.day}`;
-}
-
 function validateDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) {
-    throw new Error("日期格式不正确");
+    throw new Error("Date format is invalid.");
   }
   return value;
 }
 
-function requireActiveDate(date) {
+function requireStudentDate(date) {
+  const today = todayDate();
   const activeDate = activeSignupDate();
-  if (date !== activeDate) {
-    throw new Error(`当前只能操作 ${activeDate.replaceAll("-", "/")} 的时间表`);
+  if (date !== today && date !== activeDate) {
+    throw new Error(`Students can only use ${activeDate.replaceAll("-", "/")}.`);
   }
 }
 
-function requireTodayOrFutureDate(date) {
+function requireCoachDate(date) {
   const today = todayDate();
   if (date < today) {
-    throw new Error(`教练只能操作 ${today.replaceAll("-", "/")} 或以后的时间表`);
+    throw new Error(`Coach can only manage ${today.replaceAll("-", "/")} or later.`);
   }
 }
 
@@ -78,7 +79,7 @@ function scheduleKey(date) {
 function normalizeSlot(slot, existingByTime = new Map()) {
   const time = cleanText(slot.time, 24);
   if (!timePattern.test(time)) {
-    throw new Error(`时段格式不正确：${time || "空白"}`);
+    throw new Error(`Invalid time slot: ${time || "blank"}`);
   }
 
   const available = Boolean(slot.available);
@@ -98,12 +99,12 @@ function sortSlots(slots) {
 function requireCoachPin(event) {
   const configuredPin = process.env.COACH_PIN;
   if (!configuredPin) {
-    throw new Error("请先在 Netlify 环境变量中设置 COACH_PIN");
+    throw new Error("COACH_PIN is not set in Netlify environment variables.");
   }
 
   const suppliedPin = event.headers["x-coach-pin"] || event.headers["X-Coach-Pin"];
   if (suppliedPin !== configuredPin) {
-    throw new Error("教练 PIN 不正确");
+    throw new Error("Coach PIN is incorrect.");
   }
 }
 
@@ -124,9 +125,9 @@ async function writeSchedule(store, schedule) {
 async function saveCoachSchedule(event, store, body) {
   requireCoachPin(event);
   const date = validateDate(body.date);
-  requireTodayOrFutureDate(date);
+  requireCoachDate(date);
   if (!Array.isArray(body.slots)) {
-    throw new Error("缺少时段列表");
+    throw new Error("Missing slot list.");
   }
 
   const current = await readSchedule(store, date);
@@ -136,7 +137,7 @@ async function saveCoachSchedule(event, store, body) {
 
   for (const slot of slots) {
     if (seen.has(slot.time)) {
-      throw new Error(`重复时段：${slot.time}`);
+      throw new Error(`Duplicate time slot: ${slot.time}`);
     }
     seen.add(slot.time);
   }
@@ -147,24 +148,24 @@ async function saveCoachSchedule(event, store, body) {
 
 async function signup(store, body) {
   const date = validateDate(body.date);
-  requireActiveDate(date);
+  requireStudentDate(date);
   const time = cleanText(body.time, 24);
   const name = cleanText(body.name, 20);
 
   if (!name) {
-    throw new Error("请填写姓名");
+    throw new Error("Please enter your name.");
   }
 
   const current = await readSchedule(store, date);
   const slot = current.slots.find((item) => item.time === time);
   if (!slot) {
-    throw new Error("这个时段不存在");
+    throw new Error("This time slot does not exist.");
   }
   if (!slot.available) {
-    throw new Error("这个时段教练没空");
+    throw new Error("The coach is unavailable for this time slot.");
   }
   if (slot.name) {
-    throw new Error("这个时段已经有人报名");
+    throw new Error("This time slot has already been booked.");
   }
 
   slot.name = name;
@@ -174,21 +175,21 @@ async function signup(store, body) {
 
 async function cancelSignup(store, body) {
   const date = validateDate(body.date);
-  requireActiveDate(date);
+  requireStudentDate(date);
   const time = cleanText(body.time, 24);
   const name = cleanText(body.name, 20);
 
   if (!name) {
-    throw new Error("请输入报名时使用的姓名");
+    throw new Error("Enter the same name used for booking.");
   }
 
   const current = await readSchedule(store, date);
   const slot = current.slots.find((item) => item.time === time);
   if (!slot || !slot.name) {
-    throw new Error("这个时段没有报名记录");
+    throw new Error("No booking exists for this time slot.");
   }
   if (slot.name !== name) {
-    throw new Error("姓名不匹配，不能取消别人的报名");
+    throw new Error("Name does not match this booking.");
   }
 
   slot.name = "";
@@ -206,7 +207,7 @@ export async function handler(event) {
       const body = JSON.parse(event.body || "{}");
       if (body.action === "verifyCoach") {
         requireCoachPin(event);
-        return response(200, { ok: true, activeDate: activeSignupDate() });
+        return response(200, { ok: true, activeDate: activeSignupDate(), today: todayDate() });
       }
     }
 
@@ -217,9 +218,7 @@ export async function handler(event) {
       const hasCoachPin = Boolean(event.headers["x-coach-pin"] || event.headers["X-Coach-Pin"]);
       if (hasCoachPin) {
         requireCoachPin(event);
-        requireTodayOrFutureDate(date);
-      } else {
-        requireActiveDate(date);
+        requireCoachDate(date);
       }
       const schedule = await readSchedule(store, date);
       return response(200, schedule);
@@ -236,16 +235,16 @@ export async function handler(event) {
       if (body.action === "cancelSignup") {
         return await cancelSignup(store, body);
       }
-      throw new Error("未知操作");
+      throw new Error("Unknown action.");
     }
 
-    return response(405, { error: "不支持的请求方式" });
+    return response(405, { error: "Method is not supported." });
   } catch (error) {
     if (String(error.message || "").includes("Netlify Blobs")) {
       return response(500, {
-        error: "后台存储没有连接成功，请重新用 Netlify 构建部署，不要只拖拽静态文件发布"
+        error: "Netlify Blobs is not connected. Redeploy with Netlify build instead of static drag-and-drop."
       });
     }
-    return response(400, { error: error.message || "请求失败" });
+    return response(400, { error: error.message || "Request failed." });
   }
 }
