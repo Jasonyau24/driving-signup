@@ -63,14 +63,46 @@ function renderSchedule() {
     time.textContent = slot.time;
     name.textContent = isBusy ? (slot.note || "教练没空") : isTaken ? `已报名：${slot.name}` : (slot.note || "可报名");
 
-    button.textContent = isBusy ? "不可选" : isTaken ? "已满" : selectedTime === slot.time ? "已选" : "选择";
-    button.disabled = isBusy || isTaken;
-    button.addEventListener("click", () => {
-      selectedTime = slot.time;
-      renderSchedule();
-    });
+    if (isBusy) {
+      button.textContent = "不可选";
+      button.disabled = true;
+    } else if (isTaken) {
+      button.textContent = "取消";
+      button.disabled = false;
+      button.classList.add("cancel-button");
+      button.addEventListener("click", () => cancelSignup(slot.time));
+    } else {
+      button.textContent = selectedTime === slot.time ? "已选" : "选择";
+      button.disabled = false;
+      button.addEventListener("click", () => {
+        selectedTime = slot.time;
+        renderSchedule();
+      });
+    }
 
     scheduleGrid.append(fragment);
+  }
+}
+
+async function cancelSignup(time) {
+  const name = studentName.value.trim();
+  if (!name) {
+    setStatus("请输入报名时使用的姓名，再取消时段", "error");
+    return;
+  }
+
+  setStatus("正在取消...");
+  try {
+    const data = await requestJson("/.netlify/functions/schedule", {
+      method: "POST",
+      body: JSON.stringify({ action: "cancelSignup", date: signupDate, time, name })
+    });
+    schedule = { date: data.date, slots: data.slots.map(normalizeSlot) };
+    selectedTime = "";
+    renderSchedule();
+    setStatus("已取消报名");
+  } catch (error) {
+    setStatus(error.message, "error");
   }
 }
 

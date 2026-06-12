@@ -166,6 +166,16 @@ h1 {
   color: var(--taken);
 }
 
+.cancel-button {
+  border-color: rgba(183, 67, 53, 0.45);
+  color: var(--taken);
+}
+
+.cancel-button:hover {
+  border-color: var(--taken);
+  background: #fff3f1;
+}
+
 input {
   min-height: 42px;
   width: 100%;

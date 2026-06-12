@@ -1,6 +1,10 @@
+const rolloverHour = 21;
+
 export function activeSignupDate(now = new Date()) {
   const value = new Date(now);
-  value.setDate(value.getDate() + 1);
+  if (value.getHours() >= rolloverHour) {
+    value.setDate(value.getDate() + 1);
+  }
   return toDateInputValue(value);
 }
 
@@ -46,7 +50,7 @@ export async function requestJson(url, options = {}) {
       throw new Error(payload.error);
     }
     if (response.status === 404) {
-      throw new Error("找不到后台函数，请用 Git/Netlify 构建发布，不要只拖拽静态文件");
+      throw new Error("找不到后台函数，请确认 netlify/functions/schedule.mjs 已上传并重新部署");
     }
     throw new Error(`服务器请求失败（${response.status}）`);
   }
