@@ -1,11 +1,33 @@
 const rolloverHour = 21;
+const appTimeZone = "Asia/Taipei";
 
 export function activeSignupDate(now = new Date()) {
-  const value = new Date(now);
-  if (value.getHours() >= rolloverHour) {
-    value.setDate(value.getDate() + 1);
-  }
-  return toDateInputValue(value);
+  const parts = localDateParts(now);
+  const today = `${parts.year}-${parts.month}-${parts.day}`;
+  return Number(parts.hour) >= rolloverHour ? addDays(today, 1) : today;
+}
+
+export function todayDate(now = new Date()) {
+  const parts = localDateParts(now);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function localDateParts(now = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: appTimeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hourCycle: "h23"
+  });
+  return Object.fromEntries(formatter.formatToParts(now).map((part) => [part.type, part.value]));
+}
+
+function addDays(dateValue, days) {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days, 12, 0, 0));
+  return date.toISOString().slice(0, 10);
 }
 
 export function toDateInputValue(date) {

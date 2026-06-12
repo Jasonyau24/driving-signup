@@ -1,6 +1,5 @@
-import { activeSignupDate, formatDate, normalizeSlot, requestJson } from "./shared.js";
+import { todayDate, normalizeSlot, requestJson } from "./shared.js";
 
-const activeDateText = document.querySelector("#activeDateText");
 const statusText = document.querySelector("#statusText");
 const loginPanel = document.querySelector("#loginPanel");
 const coachPanel = document.querySelector("#coachPanel");
@@ -10,9 +9,10 @@ const coachForm = document.querySelector("#coachForm");
 const addSlot = document.querySelector("#addSlot");
 const slotEditor = document.querySelector("#slotEditor");
 const editorTemplate = document.querySelector("#editorRowTemplate");
+const publishDatePicker = document.querySelector("#publishDatePicker");
 
-const publishDate = activeSignupDate();
-let schedule = { date: publishDate, slots: [] };
+let selectedDate = todayDate();
+let schedule = { date: selectedDate, slots: [] };
 let activePin = sessionStorage.getItem("coachPin") || "";
 
 const defaultSlots = [
@@ -30,7 +30,8 @@ const defaultSlots = [
   "19:00-20:00"
 ];
 
-activeDateText.textContent = formatDate(publishDate);
+publishDatePicker.min = todayDate();
+publishDatePicker.value = selectedDate;
 coachPin.value = activePin;
 
 function setStatus(message, tone = "normal") {
@@ -68,17 +69,21 @@ async function unlockCoach(pin) {
 }
 
 async function loadSchedule() {
+  selectedDate = publishDatePicker.value || todayDate();
+  publishDatePicker.value = selectedDate;
   setStatus("正在读取时间表...");
   try {
-    const data = await requestJson(`/.netlify/functions/schedule?date=${encodeURIComponent(publishDate)}`);
+    const data = await requestJson(`/.netlify/functions/schedule?date=${encodeURIComponent(selectedDate)}`, {
+      headers: { "X-Coach-Pin": activePin }
+    });
     schedule = {
       date: data.date,
       slots: Array.isArray(data.slots) ? data.slots.map(normalizeSlot) : []
     };
     renderEditor();
-    setStatus(data.updatedAt ? `已更新：${new Date(data.updatedAt).toLocaleString()}` : "当前日期还没有发布时间表");
+    setStatus(data.updatedAt ? `已更新：${new Date(data.updatedAt).toLocaleString()}` : "所选日期还没有发布时间表");
   } catch (error) {
-    schedule = { date: publishDate, slots: [] };
+    schedule = { date: selectedDate, slots: [] };
     renderEditor();
     setStatus(error.message, "error");
   }
@@ -155,12 +160,13 @@ coachForm.addEventListener("submit", async (event) => {
 
   const submit = coachForm.querySelector("button[type='submit']");
   submit.disabled = true;
+  selectedDate = publishDatePicker.value || todayDate();
   setStatus("正在发布...");
   try {
     const data = await requestJson("/.netlify/functions/schedule", {
       method: "POST",
       headers: { "X-Coach-Pin": activePin },
-      body: JSON.stringify({ action: "saveSchedule", date: publishDate, slots })
+      body: JSON.stringify({ action: "saveSchedule", date: selectedDate, slots })
     });
     schedule = { date: data.date, slots: data.slots.map(normalizeSlot) };
     renderEditor();
@@ -174,6 +180,12 @@ coachForm.addEventListener("submit", async (event) => {
     }
   } finally {
     submit.disabled = false;
+  }
+});
+
+publishDatePicker.addEventListener("change", () => {
+  if (activePin) {
+    loadSchedule();
   }
 });
 

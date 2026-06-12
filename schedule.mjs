@@ -45,6 +45,11 @@ function activeSignupDate() {
   return Number(parts.hour) >= rolloverHour ? addDays(today, 1) : today;
 }
 
+function todayDate() {
+  const parts = localDateParts();
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 function validateDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) {
     throw new Error("日期格式不正确");
@@ -56,6 +61,13 @@ function requireActiveDate(date) {
   const activeDate = activeSignupDate();
   if (date !== activeDate) {
     throw new Error(`当前只能操作 ${activeDate.replaceAll("-", "/")} 的时间表`);
+  }
+}
+
+function requireTodayOrFutureDate(date) {
+  const today = todayDate();
+  if (date < today) {
+    throw new Error(`教练只能操作 ${today.replaceAll("-", "/")} 或以后的时间表`);
   }
 }
 
@@ -112,7 +124,7 @@ async function writeSchedule(store, schedule) {
 async function saveCoachSchedule(event, store, body) {
   requireCoachPin(event);
   const date = validateDate(body.date);
-  requireActiveDate(date);
+  requireTodayOrFutureDate(date);
   if (!Array.isArray(body.slots)) {
     throw new Error("缺少时段列表");
   }
@@ -202,7 +214,13 @@ export async function handler(event) {
 
     if (event.httpMethod === "GET") {
       const date = validateDate(event.queryStringParameters?.date);
-      requireActiveDate(date);
+      const hasCoachPin = Boolean(event.headers["x-coach-pin"] || event.headers["X-Coach-Pin"]);
+      if (hasCoachPin) {
+        requireCoachPin(event);
+        requireTodayOrFutureDate(date);
+      } else {
+        requireActiveDate(date);
+      }
       const schedule = await readSchedule(store, date);
       return response(200, schedule);
     }
