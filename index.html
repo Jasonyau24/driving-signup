@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>练车报名表</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Driving Practice</p>
+          <h1>练车报名表</h1>
+        </div>
+        <div class="topbar-actions">
+          <a class="secondary-button coach-link" href="coach.html">教练入口</a>
+          <div class="date-badge" aria-label="当前可报名日期">
+            <span>可报名日期</span>
+            <strong id="activeDateText">读取中</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="toolbar">
+        <p id="statusText" class="status" role="status">正在读取时间表...</p>
+      </section>
+
+      <section class="panel">
+        <form id="signupForm" class="signup-form">
+          <label>
+            <span>姓名</span>
+            <input id="studentName" name="name" autocomplete="name" maxlength="20" placeholder="请输入姓名" required>
+          </label>
+          <button class="primary-button" type="submit">报名选中时段</button>
+        </form>
+        <div id="scheduleGrid" class="schedule-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <template id="slotCardTemplate">
+      <article class="slot-card">
+        <div class="slot-main">
+          <p class="slot-time"></p>
+          <p class="slot-name"></p>
+        </div>
+        <button class="select-button" type="button"></button>
+      </article>
+    </template>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

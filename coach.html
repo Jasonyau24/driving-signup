@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>教练发布时间表</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Coach Console</p>
+          <h1>教练发布</h1>
+        </div>
+        <div class="topbar-actions">
+          <a class="secondary-button coach-link" href="index.html">返回报名</a>
+          <div class="date-badge" aria-label="发布日期">
+            <span>发布日期</span>
+            <strong id="activeDateText">读取中</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="toolbar">
+        <p id="statusText" class="status" role="status">请输入教练 PIN</p>
+      </section>
+
+      <section id="loginPanel" class="panel access-panel">
+        <form id="pinForm" class="pin-form">
+          <label>
+            <span>教练 PIN</span>
+            <input id="coachPin" type="password" autocomplete="current-password" placeholder="请输入教练 PIN" required>
+          </label>
+          <button class="primary-button" type="submit">进入管理</button>
+        </form>
+      </section>
+
+      <section id="coachPanel" class="panel hidden">
+        <form id="coachForm" class="coach-form">
+          <div class="coach-actions full-width">
+            <button class="secondary-button" id="addSlot" type="button">新增时段</button>
+            <button class="primary-button" type="submit">发布明天时间表</button>
+          </div>
+        </form>
+        <div id="slotEditor" class="slot-editor"></div>
+      </section>
+    </main>
+
+    <template id="editorRowTemplate">
+      <div class="editor-row">
+        <label>
+          <span>时间</span>
+          <input class="editor-time" type="text" placeholder="18:00-19:00" required>
+        </label>
+        <label class="toggle-line">
+          <input class="editor-available" type="checkbox">
+          <span>可报名</span>
+        </label>
+        <label class="wide">
+          <span>备注</span>
+          <input class="editor-note" type="text" maxlength="30" placeholder="可选">
+        </label>
+        <button class="danger-button" type="button">删除</button>
+      </div>
+    </template>
+
+    <script src="coach.js" type="module"></script>
+  </body>
+</html>

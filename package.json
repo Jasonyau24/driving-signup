@@ -1,0 +1,14 @@
+{
+  "name": "driving-practice-signup",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx netlify-cli dev",
+    "build": "echo Static site ready",
+    "start": "npx netlify-cli dev"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.2.0"
+  }
+}
