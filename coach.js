@@ -9,7 +9,25 @@ const coachForm = document.querySelector("#coachForm");
 const addSlot = document.querySelector("#addSlot");
 const slotEditor = document.querySelector("#slotEditor");
 const editorTemplate = document.querySelector("#editorRowTemplate");
-const publishDatePicker = document.querySelector("#publishDatePicker");
+let publishDatePicker = document.querySelector("#publishDatePicker");
+
+if (!publishDatePicker) {
+  const dateBadge = document.querySelector(".date-badge");
+  const fallbackDateText = document.querySelector("#activeDateText");
+  publishDatePicker = document.createElement("input");
+  publishDatePicker.id = "publishDatePicker";
+  publishDatePicker.type = "date";
+
+  if (dateBadge) {
+    dateBadge.classList.add("date-picker-badge");
+    dateBadge.replaceChildren();
+    const label = document.createElement("span");
+    label.textContent = "发布日期";
+    dateBadge.append(label, publishDatePicker);
+  } else if (fallbackDateText) {
+    fallbackDateText.replaceWith(publishDatePicker);
+  }
+}
 
 let selectedDate = todayDate();
 let schedule = { date: selectedDate, slots: [] };

@@ -15,10 +15,10 @@
         </div>
         <div class="topbar-actions">
           <a class="secondary-button coach-link" href="index.html">返回报名</a>
-          <div class="date-badge" aria-label="发布日期">
+          <label class="date-badge date-picker-badge" aria-label="选择发布日期">
             <span>发布日期</span>
-            <strong id="activeDateText">读取中</strong>
-          </div>
+            <input id="publishDatePicker" type="date">
+          </label>
         </div>
       </header>
 
@@ -40,7 +40,7 @@
         <form id="coachForm" class="coach-form">
           <div class="coach-actions full-width">
             <button class="secondary-button" id="addSlot" type="button">新增时段</button>
-            <button class="primary-button" type="submit">发布明天时间表</button>
+            <button class="primary-button" type="submit">发布所选日期时间表</button>
           </div>
         </form>
         <div id="slotEditor" class="slot-editor"></div>
